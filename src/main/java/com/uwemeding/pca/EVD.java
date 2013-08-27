@@ -4,28 +4,28 @@ package com.uwemeding.pca;
  * Eigenvalues and eigenvectors of a real matrix.
  *
  * <p>If A is symmetric, then A = V*D*V' where the eigenvalue matrix D is
- * diagonal and the eigenvector matrix V is orthogonal.
- * I.e. A = V.times(D.times(V.transpose())) and
- * V.times(V.transpose()) equals the identity matrix.</p>
+ * diagonal and the eigenvector matrix V is orthogonal. I.e. A =
+ * V.times(D.times(V.transpose())) and V.times(V.transpose()) equals the
+ * identity matrix.</p>
  * <p>
- * If A is not symmetric, then the eigenvalue matrix D is block diagonal
- * with the real eigenvalues in 1-by-1 blocks and any complex eigenvalues,
- * lambda + i*mu, in 2-by-2 blocks, [lambda, mu; -mu, lambda].  The
- * columns of V represent the eigenvectors in the sense that A*V = V*D,
- * i.e. A.times(V) equals V.times(D).  The matrix V may be badly
- * conditioned, or even singular, so the validity of the equation
- * A = V*D*inverse(V) depends upon V.cond().</p>
+ * If A is not symmetric, then the eigenvalue matrix D is block diagonal with
+ * the real eigenvalues in 1-by-1 blocks and any complex eigenvalues, lambda +
+ * i*mu, in 2-by-2 blocks, [lambda, mu; -mu, lambda]. The columns of V represent
+ * the eigenvectors in the sense that A*V = V*D, i.e. A.times(V) equals
+ * V.times(D). The matrix V may be badly conditioned, or even singular, so the
+ * validity of the equation A = V*D*inverse(V) depends upon V.cond().</p>
  */
-public class EigenvalueDecomposition implements java.io.Serializable {
+public class EVD {
 
 	/**
 	 * Check for symmetry, then construct the eigenvalue decomposition
+	 *
 	 * @param matrix Square matrix
 	 * @return Structure to access D and V.
 	 */
-	public EigenvalueDecomposition(Matrix matrix) {
+	public EVD(Matrix matrix) {
 		double[][] A = matrix.getArray();
-		n = matrix.getColumnDimension();
+		n = matrix.getNCols();
 		V = new double[n][n];
 		d = new double[n];
 		e = new double[n];
@@ -39,9 +39,7 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 
 		if (issymmetric) {
 			for (int i = 0; i < n; i++) {
-				for (int j = 0; j < n; j++) {
-					V[i][j] = A[i][j];
-				}
+				System.arraycopy(A[i], 0, V[i], 0, n);
 			}
 
 			// Tridiagonalize.
@@ -61,7 +59,7 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 			}
 
 			// Reduce to Hessenberg form.
-			reduceToHessenBerg();
+			reduceToHessenberg();
 
 			// Reduce Hessenberg to real Schur form.
 			reduceHessenbergToSchur();
@@ -70,7 +68,8 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 
 	/**
 	 * Return the eigenvector matrix
-	 * @return     V
+	 *
+	 * @return V
 	 */
 	public Matrix getV() {
 		return new Matrix(V, n, n);
@@ -78,7 +77,8 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 
 	/**
 	 * Return the real parts of the eigenvalues
-	 * @return     real(diag(D))
+	 *
+	 * @return real(diag(D))
 	 */
 	public double[] getRealEigenvalues() {
 		return d;
@@ -86,7 +86,8 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 
 	/**
 	 * Return the imaginary parts of the eigenvalues
-	 * @return     imag(diag(D))
+	 *
+	 * @return imag(diag(D))
 	 */
 	public double[] getImagEigenvalues() {
 		return e;
@@ -94,7 +95,8 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 
 	/**
 	 * Return the block diagonal eigenvalue matrix
-	 * @return     D
+	 *
+	 * @return D
 	 */
 	public Matrix getD() {
 		Matrix X = new Matrix(n, n);
@@ -131,15 +133,7 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 	 * Symmetric Householder reduction to tridiagonal form.
 	 */
 	private void tridiagonalize() {
-
-		//  This is derived from the Algol procedures tred2 by
-		//  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for
-		//  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding
-		//  Fortran subroutine in EISPACK.
-
-		for (int j = 0; j < n; j++) {
-			d[j] = V[n - 1][j];
-		}
+		System.arraycopy(V[n - 1], 0, d, 0, n);
 
 		// Householder reduction to tridiagonal form.
 
@@ -288,7 +282,7 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 
 					double g = d[l];
 					double p = (d[l + 1] - g) / (2.0 * e[l]);
-					double r = KL.hypot(p, 1.0);
+					double r = Math.hypot(p, 1.0);
 					if (p < 0) {
 						r = -r;
 					}
@@ -316,7 +310,7 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 						s2 = s;
 						g = c * e[i];
 						h = c * p;
-						r = KL.hypot(p, e[i]);
+						r = Math.hypot(p, e[i]);
 						e[i + 1] = s * r;
 						s = e[i] / r;
 						c = p / r;
@@ -367,14 +361,12 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 	}
 
 	/**
-	 * Nonsymmetric reduction to Hessenberg form.
+	 * Non-symmetric reduction to Hessenberg form. This is derived from the
+	 * Algol procedures orthes and ortran, by Martin and Wilkinson, Handbook for
+	 * Auto. Comp., Vol.ii-Linear Algebra, and the corresponding Fortran
+	 * subroutines in EISPACK.
 	 */
-	private void reduceToHessenBerg() {
-
-		//  This is derived from the Algol procedures orthes and ortran,
-		//  by Martin and Wilkinson, Handbook for Auto. Comp.,
-		//  Vol.ii-Linear Algebra, and the corresponding
-		//  Fortran subroutines in EISPACK.
+	private void reduceToHessenberg() {
 
 		int low = 0;
 		int high = n - 1;
@@ -478,14 +470,12 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 	}
 
 	/**
-	 * Nonsymmetric reduction from Hessenberg to real Schur form.
+	 * Non-symmetric reduction from Hessenberg to real Schur form. This is
+	 * derived from the Algol procedure hqr2, by Martin and Wilkinson, Handbook
+	 * for Auto. Comp., Vol.ii-Linear Algebra, and the corresponding Fortran
+	 * subroutine in EISPACK.
 	 */
 	private void reduceHessenbergToSchur() {
-
-		//  This is derived from the Algol procedure hqr2,
-		//  by Martin and Wilkinson, Handbook for Auto. Comp.,
-		//  Vol.ii-Linear Algebra, and the corresponding
-		//  Fortran subroutine in EISPACK.
 
 		// Initialize
 
@@ -672,9 +662,9 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 					if (m == l) {
 						break;
 					}
-					if (Math.abs(H[m][m - 1]) * (Math.abs(q) + Math.abs(r)) <
-							eps * (Math.abs(p) * (Math.abs(H[m - 1][m - 1]) + Math.abs(z) +
-							Math.abs(H[m + 1][m + 1])))) {
+					if (Math.abs(H[m][m - 1]) * (Math.abs(q) + Math.abs(r))
+							< eps * (Math.abs(p) * (Math.abs(H[m - 1][m - 1]) + Math.abs(z)
+							+ Math.abs(H[m + 1][m + 1])))) {
 						break;
 					}
 					m--;
@@ -867,8 +857,8 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 							vr = (d[i] - p) * (d[i] - p) + e[i] * e[i] - q * q;
 							vi = (d[i] - p) * 2.0 * q;
 							if (vr == 0.0 & vi == 0.0) {
-								vr = eps * norm * (Math.abs(w) + Math.abs(q) +
-										Math.abs(x) + Math.abs(y) + Math.abs(z));
+								vr = eps * norm * (Math.abs(w) + Math.abs(q)
+										+ Math.abs(x) + Math.abs(y) + Math.abs(z));
 							}
 							complexDivision(x * r - z * ra + q * sa, x * s - z * sa - q * ra, vr, vi);
 							H[i][n - 1] = cdivr;
@@ -901,9 +891,7 @@ public class EigenvalueDecomposition implements java.io.Serializable {
 
 		for (int i = 0; i < nn; i++) {
 			if (i < low | i > high) {
-				for (int j = i; j < nn; j++) {
-					V[i][j] = H[i][j];
-				}
+				System.arraycopy(H[i], i, V[i], i, nn - i);
 			}
 		}
 

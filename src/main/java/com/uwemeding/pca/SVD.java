@@ -10,12 +10,12 @@ package com.uwemeding.pca;
  * <p>The singular values, sigma[k] = S[k][k], are ordered so that
  * sigma[0] >= sigma[1] >= ... >= sigma[n-1].</p>
  *
- * <p>The singular value decompostion always exists, so the constructor will
+ * <p>The singular value decomposition always exists, so the constructor will
  * never fail.  The matrix condition number and the effective numerical
  * rank can be computed from this decomposition.</p>
  *
  */
-public class SingularValueDecomposition implements java.io.Serializable {
+public class SVD {
 
 	// Arrays for internal storage of U and V.
 	private double[][] U, V;
@@ -29,18 +29,19 @@ public class SingularValueDecomposition implements java.io.Serializable {
 	 * @param A    Rectangular matrix
 	 * @return     Structure to access U, S and V.
 	 */
-	public SingularValueDecomposition(Matrix matrix) {
+	public SVD(Matrix matrix) {
 
 		// Derived from LINPACK code.
 		// Initialize.
 		double[][] A = matrix.getArrayCopy();
-		m = matrix.getRowDimension();
-		n = matrix.getColumnDimension();
+		m = matrix.getNRows();
+		n = matrix.getNCols();
 
 		// Apparently the failing cases are only a proper subset of (m<n),
-		// so let's not throw error.  Correct fix to come later?
+		// so let's not throw error.
+		// @todo Investigate possible fix
 		// if (m<n) {
-		// throw new MathException("SVD only works for m >= n"); }
+		// throw new RuntimeException("SVD only works for m >= n"); }
 		int nu = Math.min(m, n);
 		s = new double[Math.min(m + 1, n)];
 		U = new double[m][nu];
@@ -63,7 +64,7 @@ public class SingularValueDecomposition implements java.io.Serializable {
 				// Compute 2-norm of k-th column without under/overflow.
 				s[k] = 0;
 				for (int i = k; i < m; i++) {
-					s[k] = KL.hypot(s[k], A[i][k]);
+					s[k] = Math.hypot(s[k], A[i][k]);
 				}
 				if (s[k] != 0.0) {
 					if (A[k][k] < 0.0) {
@@ -112,7 +113,7 @@ public class SingularValueDecomposition implements java.io.Serializable {
 				// Compute 2-norm without under/overflow.
 				e[k] = 0;
 				for (int i = k + 1; i < n; i++) {
-					e[k] = KL.hypot(e[k], e[i]);
+					e[k] = Math.hypot(e[k], e[i]);
 				}
 				if (e[k] != 0.0) {
 					if (e[k + 1] < 0.0) {
@@ -296,7 +297,7 @@ public class SingularValueDecomposition implements java.io.Serializable {
 					double f = e[p - 2];
 					e[p - 2] = 0.0;
 					for (int j = p - 2; j >= k; j--) {
-						double t = KL.hypot(s[j], f);
+						double t = Math.hypot(s[j], f);
 						double cs = s[j] / t;
 						double sn = f / t;
 						s[j] = t;
@@ -321,7 +322,7 @@ public class SingularValueDecomposition implements java.io.Serializable {
 					double f = e[k - 1];
 					e[k - 1] = 0.0;
 					for (int j = k; j < p; j++) {
-						double t = KL.hypot(s[j], f);
+						double t = Math.hypot(s[j], f);
 						double cs = s[j] / t;
 						double sn = f / t;
 						s[j] = t;
@@ -368,7 +369,7 @@ public class SingularValueDecomposition implements java.io.Serializable {
 					// Chase zeros.
 
 					for (int j = k; j < p - 1; j++) {
-						double t = KL.hypot(f, g);
+						double t = Math.hypot(f, g);
 						double cs = f / t;
 						double sn = g / t;
 						if (j != k) {
@@ -385,7 +386,7 @@ public class SingularValueDecomposition implements java.io.Serializable {
 								V[i][j] = t;
 							}
 						}
-						t = KL.hypot(f, g);
+						t = Math.hypot(f, g);
 						cs = f / t;
 						sn = g / t;
 						s[j] = t;
@@ -512,7 +513,7 @@ public class SingularValueDecomposition implements java.io.Serializable {
 
 	/**
 	 * Effective numerical matrix rank
-	 * @return     Number of nonnegligible singular values.
+	 * @return     Number of non-negligible singular values.
 	 */
 	public int rank() {
 		double eps = Math.pow(2.0, -52.0);

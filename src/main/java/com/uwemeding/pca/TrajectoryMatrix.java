@@ -13,7 +13,6 @@ public class TrajectoryMatrix extends Matrix {
 		int nrows = getNRows();
 		int pos = 0; // position in vector
 
-		System.out.println("nrows=" + nrows + " ncols=" + ncols);
 		for (int i = 0; i < nrows; i++) {
 			double value = v[pos++];
 			int availCols = i < ncols ? i + 1 : ncols;

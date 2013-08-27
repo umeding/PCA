@@ -4,12 +4,12 @@
 package com.uwemeding.pca;
 
 /**
- * A math exception
+ * Matrix exception
  * @author uwe
  */
-public class MathException extends RuntimeException {
+public class MatrixException extends RuntimeException {
 
-	public MathException(String s) {
+	public MatrixException(String s) {
 		super(s);
 	}
 }
