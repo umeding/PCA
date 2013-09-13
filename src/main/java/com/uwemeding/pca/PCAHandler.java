@@ -18,30 +18,22 @@
 package com.uwemeding.pca;
 
 /**
- * Create a trajectory style matrix from a vector.
- *
+ * Wraps PCA invocations
  * @author uwe
  */
-public class TrajectoryMatrix extends Matrix {
+public class PCAHandler {
 
-	public TrajectoryMatrix(double[] v, int ncols) {
-		super(v.length - ncols + 1, ncols);
-		double[][] arr = getArray();
-		int nrows = getNRows();
-		int pos = 0; // position in vector
+	public PCAHandler() {
+	}
 
-		for (int i = 0; i < nrows; i++) {
-			double value = v[pos++];
-			int availCols = i < ncols ? i + 1 : ncols;
-			for (int j = 0, m = i; j < availCols && m >= 0; j++, m--) {
-				arr[m][j] = value;
-			}
-		}
-		for (int i = 1; i < ncols; i++) {
-			double value = v[pos++];
-			for (int j = i, m = nrows - 1; j < ncols && m > 0; j++, m--) {
-				arr[m][j] = value;
-			}
-		}
+	/**
+	 * Run a principal component analysis from a simple time series vector. We 
+	 * are converting the data into a Toeplitz style matrix before running the
+	 * PCA.
+	 */
+	public PCA fromSimpleTimeSeries(double[] data) {
+		Matrix m = new ToeplitzMatrix(data);
+		PCA pca = new PCA(m);
+		return pca;
 	}
 }
