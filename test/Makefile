@@ -1,4 +1,4 @@
-INPUTS= simple compressor_osc compressor_per_day_kwh compressor_1_day_detail
+INPUTS= simple basilevsy compressor_per_day_kwh compressor_1_day_detail
 
 all:
 	@for i in $(INPUTS) ; do \
