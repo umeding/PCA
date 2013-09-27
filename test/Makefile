@@ -6,5 +6,5 @@ all:
 	done
     
 
-clean:; rm *lambda* *pcomps* *pfacs*
+clean:; rm -f *lambda* *pcomps* *pfacs* *_cc* *_cumcon*
 

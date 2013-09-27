@@ -782,4 +782,9 @@ public class Matrix {
 			throw new IllegalArgumentException("Matrix dimensions must agree.");
 		}
 	}
+
+	@Override
+	public String toString() {
+		return "Matrix{" + "nrows=" + m + ", ncols=" + n + '}';
+	}
 }
