@@ -1,0 +1,383 @@
+
+\documentclass[paper=letter, fontsize=11pt, onecolunm, twoside]{scrartcl}	 
+\usepackage{pca}
+
+\begin{document}
+\acrodef{PCA}{Principal Components Analysis}
+\acrodef{MSE}{mean squared error}
+\acrodef{SVD}{\emph{singular value decomposition}}
+
+\maketitle
+\thispagestyle{fancy} % Enabling the custom headers/footers for the first page 
+
+
+\begin{abstract}
+
+\ac{PCA} is a great tool of modern data analysis. It follows two
+related goals: It tries to find a good data representation by only
+focusing on the features part. A side effect of this focus is that it
+also reduces the redundancy in the data. 
+
+Another way to interpret PCA is that there is some \emph{variable}
+which accounts for a percentage of the variation in your data. What
+this hidden variable is is unclear. However, given that your primary
+eigenvector accounts for say 45\% of all the variation in your sample
+implies that the effect of this number one hidden variable is quite
+large. 
+
+What is this hidden factor? That answer depends very much on your
+data. Nearly every measurement in the sample data has a correlation to
+it.  Maybe it's temperature changes, or day and night cycles, or some
+other reason.  You cannot determine what the hidden variable is.
+However, you can determine \emph{that} it exists.
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Principal Components Analysis}
+Formally, \ac{PCA} tries to find the linear combination within a set
+of variables for which the vector of covariances is of greatest
+length. This is done through using eigenvectors, specifically by
+calculating the covariance matrix among the variables. The largest
+eigenvalue and the corresponding eigenvector represent the direction
+of the highest variation.
+
+
+The \ac{PCA} can be used on any signal that comprises a set of
+correlated data sequences. For example, in image processing a film
+sequence comprises a set of correlated images. In energy usage
+analysis, which is expressed as a waveform that represents a
+correlated set of individual components.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\ac{PCA} is a way of identifying patterns in data, and expressing the
+data in such a way as to highlight their similarities and differences.
+Since patterns in data can be hard to find in data of high dimension,
+where the luxury of graphical representation is not available,
+\ac{PCA} is a powerful tool for analyzing data.
+
+The other main advantage of PCA is that once you have found these
+patterns in the data, and you compress the data, ie. by reducing the
+number of dimensions, without much loss of information. This technique
+used a lot in image compression.
+
+\begin{itemize}
+ \item \ac{PCA} completely decorrelates the original signal. Formally
+ speaking, the transform coefficients are statistically independent
+ for a Gaussian signal
+ \item \ac{PCA} optimizes the repacking of the signal energy, such
+ that most of the signal energy is contained in the fewest transforms
+ coefficients.
+ \item It minimizes the total entropy of the signal
+ \item For any amount of compression the \ac{MSE} in the
+ reconstruction is minimized.
+\end{itemize}
+
+% ===== Power usage plot
+\begin{figure}
+\begin{tikzpicture}
+\begin{axis}[
+    title=Power usage,
+    width=15cm, height=6cm,
+    xlabel=$time$,
+    ylabel=$kWh$
+]
+\addplot[draw=green] file {figures/compressor_per_day_kwh.data};
+\end{axis}
+\end{tikzpicture}
+\caption{Compressor waveform}
+\label{fig:compressor-waveform}
+\end{figure}
+
+
+Given these abilities, \ac{PCA} should be in widespread use. However,
+there are several drawbacks to \ac{PCA}, the greatest being the
+computational overhead required to generate the transform vectors. The
+transform vectors for the \ac{PCA} are the eigenvectors of the
+auto-covariance matrix formed from the data set. 
+
+The following recipe generates the principal component vectors for a
+signal:
+\subsection{Method}
+\begin{description}%[style=multiline]
+\item[Step 1: Get some data] ~\\*
+In Figure~\ref{fig:compressor-waveform}, we are  using measured power
+usage data set for a compressor. We could reduce it to $2$ dimensions,
+however, this would also limit our analysis to rough measures. Instead
+we will be using \emph{Toeplitz} matrices to represent the waveform,
+and thereby create a lot more dimensions to analyze. 
+
+\item[Step 2: Construct an average signal] ~\\*
+For \ac{PCA} to work properly, you have to subtract the mean from each
+of the data dimensions.
+\begin{equation}
+\bar{x} = \frac{1}{n} \sum\limits_{i=1}^{n}x_i
+\end{equation}
+The mean subtracted is the average across each dimension. So, all the
+\(x\) values have \(\bar{x}\) (the mean of the \(x\) values of all the
+data points) subtracted, and all the \(y\) values have \(\bar{y}\)
+subtracted from them. This produces a data set whose mean is zero.
+
+\item[Step 3: Calculate the covariance matrix] ~\\*
+Since the data is $n$ dimensional (the \emph{Toeplitz} matrix
+representation provides a dimension for each point), the covariance
+matrix will be \(n \times n\).
+\begin{equation}
+cov(x,y) = \frac{1}{n-1}\sum\limits_{i=1}^{n}(x_i-\bar{x})(y_i-\bar{y})
+\end{equation} 
+
+For example, the covariance matrix for an 3 dimensional data set,
+using the usual dimensions \(x\), \(y\) and \(z\). Then, the
+covariance matrix has 3 rows and 3 columns, and the values are this:
+\begin{equation}
+C_{n \times n} = 
+  \begin{pmatrix}
+  cov(x,x) & cov(x,y) & cov(x,z) \\
+  cov(y,x) & cov(y,y) & cov(y,z) \\
+  cov(z,x) & cov(z,y) & cov(z,z)
+  \end{pmatrix}
+\end{equation}
+This matrix has some interesting properties: Down the main diagonal,
+the covariance values are between one of the dimensions and itself.
+These are the variances for that dimension.  The other point is that
+since \(cov(a,b) = cov(b, a)\) , the matrix is symmetrical about the
+main diagonal.
+
+\item[Step 4: Calculate the eigenvectors and eigenvalues of the
+covariance matrix] ~\\*
+Covariance matrices are positive definite, therefore they are 
+symmetric and will have orthogonal eigenvectors and real eigenvalues.
+The covariance matrices are factorizable using:
+\begin{equation}
+U^T A U = \Lambda
+\end{equation}
+Where $U$ has eigenvectors of $A$ in its columns and
+$\Lambda=diag(\lambda_i)$, where $\lambda_i$ are  the eigenvalues of
+$A$.  There are various ways to find a solution for the eigenvectors
+$U$ and and the eigenvalues $\Lambda$ of $Cov(X)$, here we are using
+\ac{SVD}.
+\begin{equation}
+W = (XX^T)^{-1/2} \Rightarrow
+\end{equation}
+\begin{equation}
+W = U S^{-1/2}V^T
+\end{equation}
+\begin{equation}
+[U, S, V] = SVD(XX^T)
+\end{equation}
+All the eigenvectors are normalized to have unit energy, to give an
+orthogonal transform. The corresponding eigenvalues for these vectors
+show the variance distribution of the ensemble within this transform
+domain. This indicates how effective the repacking of the signal
+energy is likely to be with these vectors.  This is very important for
+PCA, but luckily, most maths packages, when asked for eigenvectors,
+will give you unit eigenvectors.
+
+So, by this process of taking the eigenvectors of the covariance
+matrix, we have been able to extract lines that characterize the data.
+
+\item[Step 5: Determine the principle components] ~\\*
+The principle components are determined by using the principle factors
+$V$ and relating back to the original data
+\begin{equation}
+PrincipleComponents = A \times V
+\end{equation}
+This is where the notion of data compression and reduced
+dimensionality comes into it. The eigenvector with the \emph{highest}
+eigenvalue is the \emph{principle component} of the data set.  In our
+example, the eigenvector with the largest eigenvalue was the one that
+pointed down the middle of the data. It is the most significant
+relationship between the data dimensions. Figure~\ref{fig:top3prcomp}
+show the largest 4 principle components.
+
+\begin{figure}
+\begin{tikzpicture}
+\begin{axis}[
+    title=Principle Components,
+    width=15cm, height=6cm,
+]
+\addplot[draw=blue] file {figures/compressor_per_day_kwh_pc_1.data};
+\addplot[draw=blue] file {figures/compressor_per_day_kwh_pc_2.data};
+\addplot[draw=blue] file {figures/compressor_per_day_kwh_pc_3.data};
+\addplot[draw=blue] file {figures/compressor_per_day_kwh_pc_4.data};
+\end{axis}
+\end{tikzpicture}
+\caption{Top 4 principal components}
+\label{fig:top3prcomp}
+\end{figure}
+
+
+\begin{figure}
+\begin{tikzpicture}
+\pgfplotsset{width=15cm,height=6cm}
+\begin{axis}[
+    scale only axis,
+    axis y line*=left,
+    xlabel=$time$,
+    ylabel=Principle components
+]
+\addplot[draw=blue] file {figures/compressor_per_day_kwh_pc_sum.data};
+\end{axis}
+\pgfplotsset{every axis y label/.append style={rotate=180,yshift=17.5cm}}
+\begin{axis}[
+    scale only axis,
+    axis y line*=right,
+    axis x line=none,
+    ylabel=Power usage
+]
+\addplot[draw=green] file {figures/compressor_per_day_kwh.data};
+\end{axis}
+
+\end{tikzpicture}
+
+\caption{Reassembled top 4 principal components, we can see how the
+original signal can be reconstituted}
+\label{fig:reasstop3prcomp}
+\end{figure}
+
+
+The eigenvalues, see Figure~\ref{fig:pclambdas}, give a measure of how
+the energy in the transform is distributed, and so indicate how well
+the energy of the signal will be redistributed in the transform. The
+first four eigenvectors of this transform represent about 80\% of the
+transform energy, which means that discarding higher order vectors
+would, on average, lead to a decreasing error.
+
+\begin{figure}
+\pgfplotsset{
+  /pgf/bar width={2pt},
+  /pgfplots/every axis y grid
+}
+\begin{tikzpicture}
+\begin{axis}[
+    width=15cm, height=6cm,
+    xlabel=Eigenvector,
+    ylabel=Eigenvalue,
+    grid=major
+]
+\addplot[draw=blue,ybar] file {figures/compressor_per_day_kwh_lambda.data};
+\end{axis}
+\end{tikzpicture}
+\caption{Eigenvalues of the principal eigenvectors}
+\label{fig:pclambdas}
+\end{figure}
+\end{description}
+
+\subsection{Interpretation}
+Figure~\ref{fig:cumcon} is related to the eigenvalues, and reflects
+the quality of the projection from the N-dimensional initial table
+($N=168$ in this example) to a lower number of dimensions. In this
+example, we can see that the first 6 eigenvalues about 50\% of the
+total variability. This means that if we represent the data on only
+one axis, we will still be able to see 50\% of the total variability
+of the data.
+
+\begin{figure}
+\pgfplotsset{
+  /pgf/bar width={2pt},
+  /pgfplots/every axis y grid
+}
+\begin{tikzpicture}
+\begin{axis}[
+    width=15cm, height=6cm,
+    xlabel=Eigenvector,
+    ylabel=Cumulative contribution,
+    grid=major
+]
+\addplot[draw=blue,ybar] file {figures/compressor_per_day_kwh_cumcon.data};
+\end{axis}
+\end{tikzpicture}
+\caption{Cumulative contribution of each eigenvalue}
+\label{fig:cumcon}
+\end{figure}
+
+
+Each eigenvalue corresponds to a factor, and each factor to a one
+dimension. A factor is a linear combination of the initial variables,
+and all the factors are uncorrelated. The eigenvalues and the
+corresponding factors are sorted by descending order of how much of
+the initial variability they represent (converted to \%).
+
+
+Ideally, the first two or three eigenvalues will correspond to a high
+\% of the variance, ensuring us that the maps based on the first two
+or three factors are a good quality projection of the initial
+multi-dimensional table. In this example, the first six factors allow
+us to represent 50\% of the initial variability of the data.  This is
+a decent result, but we will have to be careful when we interpret the
+maps as some information might be hidden in the next factors. We
+probably will need 25-30 factors to represent more than 80\% of the
+variability. We can see that the number of ``useful'' dimensions has
+been automatically detected.
+
+
+\begin{figure}
+\begin{tikzpicture}
+\begin{axis}[
+    width=10cm, height=10cm,
+    ymax=1,ymin=-1,
+    xmax=1,xmin=-1,
+    grid=major
+]
+\addplot+[draw=black,only marks] file {figures/compressor_per_day_kwh_cc.data};
+\end{axis}
+\end{tikzpicture}
+\caption{Correlations circle for the first 2 principle components}
+\label{fig:correlationcircle}
+\end{figure}
+
+
+
+Figure~\ref{fig:correlationcircle} shows the correlation circle.
+It shows a projection of the initial variables in the factors
+space.
+
+In general, when two variables are far from the center
+\begin{itemize}
+ \item If they are close to each other, they are significantly
+ positively correlated ($r \approx 1$)
+ \item If they are orthogonal, they are not correlated ($r \approx 0$)
+ \item If they are on the opposite side of the center, then they are
+ significantly negatively correlated  ($r \approx -1$)
+\end{itemize}
+
+When the variables are close to the center, it means that some
+information is carried on other axes, and that any interpretation
+might be hazardous.
+
+The correlation circle is useful in interpreting the meaning of the
+axes. In our example, we can see that certain areas correlate more
+than others. Overall, it is apparent the correlation is somewhat weak,
+as we have already determined by the number of factors we need to
+represent 80\% of the data.
+
+\begin{thebibliography}{9}
+\bibitem{basi05}
+  Alexander Basilevsky,
+  \emph{Applied Matrix Algebra in the Statistical Sciences}.
+  Dover Publications,
+  1983 Edition,
+  2005.
+
+\bibitem{abdil10}
+  Herve Abdi1 and Lynne J. Williams ,
+  \emph{Principal component analysis}, 
+  John Wiley \& Sons, WIREs Computational Statistics, Volume 2,
+  July/Aug 2010.
+
+\bibitem{shlens}
+  Jon Shlens,
+  \emph{A tutorial on Principal Component Analysis},
+  UCSD,
+  March 2003.
+
+\bibitem{wikitoep}
+  Wikipedia,
+  \emph{Toeplitz Matrix},
+  \url{http://en.wikipedia.org/wiki/Toeplitz_matrix}.
+
+
+\end{thebibliography}
+
+\end{document}
